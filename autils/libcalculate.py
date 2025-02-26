@@ -60,12 +60,15 @@ class TARGET_INFO: # 目标信息 || 来源于Realsense
 
         self.accel_status = True
         
-        '''DEPTH || COLOR'''
-        self.config.enable_stream(rs.stream.depth, self.frame_weight, self.frame_height, rs.format.z16, 30) # made a attempt || FPS 30 is MAX
-        self.config.enable_stream(rs.stream.color, self.frame_weight, self.frame_height, rs.format.bgr8, 30) # made a attempt || FPS 30 is MAX
-        if self.accel_status:
-            self.config.enable_stream(rs.stream.accel,rs.format.motion_xyz32f,63)
-            self.config.enable_stream(rs.stream.gyro,rs.format.motion_xyz32f,200)  # 获取 IMU 数据（加速度计）
+        '''DEPTH || COLOR''' # 需要设备检测取消注释以下内容
+        # self.config.enable_stream(rs.stream.depth, self.frame_weight, self.frame_height, rs.format.z16, 30) # made a attempt || FPS 30 is MAX
+        # self.config.enable_stream(rs.stream.color, self.frame_weight, self.frame_height, rs.format.bgr8, 30) # made a attempt || FPS 30 is MAX
+        # if self.accel_status:
+        #     self.config.enable_stream(rs.stream.accel,rs.format.motion_xyz32f,63)
+        #     self.config.enable_stream(rs.stream.gyro,rs.format.motion_xyz32f,200)  # 获取 IMU 数据（加速度计）
+
+        # 读取录制好的视频
+        self.config.enable_device_from_file("../input.bag", repeat_playback=False)
 
         '''STAEAM/FREAM START'''
         self.profile = self.pipeline.start(self.config)  # 流程开始
@@ -94,13 +97,13 @@ class TARGET_INFO: # 目标信息 || 来源于Realsense
                 pass
 
             # 加速度数据
-            accel_data = accel_frame.as_motion_frame()
-            accel_x = accel_data.get_motion_data().x
-            accel_y = accel_data.get_motion_data().y
-            accel_z = accel_data.get_motion_data().z
+            # accel_data = accel_frame.as_motion_frame()
+            # accel_x = accel_data.get_motion_data().x
+            # accel_y = accel_data.get_motion_data().y
+            # accel_z = accel_data.get_motion_data().z
 
-            # 使用公式：pitch = atan(ax / sqrt(ay^2 + az^2))
-            pitch_rad = math.atan2(accel_x, math.sqrt(accel_y ** 2 + accel_z ** 2)) # 俯仰角 弧度
+            # # 使用公式：pitch = atan(ax / sqrt(ay^2 + az^2))
+            # pitch_rad = math.atan2(accel_x, math.sqrt(accel_y ** 2 + accel_z ** 2)) # 俯仰角 弧度
             # print("pitch rad is {pitch_rad}")
 
         aligned_frames = self.align.process(frames)  # 获取对齐帧
