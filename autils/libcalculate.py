@@ -68,16 +68,27 @@ class TARGET_INFO: # 目标信息 || 来源于Realsense
         #     self.config.enable_stream(rs.stream.gyro,rs.format.motion_xyz32f,200)  # 获取 IMU 数据（加速度计）
 
         # 读取录制好的视频
-        self.config.enable_device_from_file("../input.bag", repeat_playback=False)
+        self.bagpath = "../input.bag" # 默认检测的bag包
+        self.init_lock = False
 
+        self.refresh()
+        self.init_lock = True
+        '''---------------- 相机参数配置 ENDING -------------------'''
+    
+    # 刷新bag
+    def refresh(self):
+        if self.init_lock:
+            try:
+                self.profile = self.pipeline.stop()
+            except:
+                pass
+        self.config.enable_device_from_file(self.bagpath, repeat_playback=False)
         '''STAEAM/FREAM START'''
         self.profile = self.pipeline.start(self.config)  # 流程开始
         # self.profile.get_device().hardware_reset()
         
         self.align_to = rs.stream.color  # 与color流对齐self
         self.align = rs.align(self.align_to)
-        '''---------------- 相机参数配置 ENDING -------------------'''
-
 
 
     ''' 获得已 排列/处理 后的所有图像 '''

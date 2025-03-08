@@ -5,12 +5,16 @@ from libdet import *
 # from utils.CTK import *
 from tkinter import Canvas
 from PIL import Image, ImageTk
-
+from test import police
 import tkinter as tk
 import cv2
 import threading
 import time
 import sys
+import requests
+import json
+
+from tkinter import filedialog
 
 class CameraApp:
     '''
@@ -21,6 +25,7 @@ class CameraApp:
 
     def __init__(self, root):
         self.root = root
+        # self.police = police()
         self.root.title("危险区域人员闯入监测")
         self.root.geometry("880x660")
         # self.image_frame = tk.Canvas(self.root, bg="gray", width=550, height=400)
@@ -37,15 +42,19 @@ class CameraApp:
                                        fg="black", relief="solid", bd=2)
         # self.result_frame.create_text(100, 20, text="识别程序状态输出", font=("Helvetica", 16))
 
+        self.file_button = tk.Button(root, text="选择文件", command=self.select_file, bg="lightblue", width=10, height=2,
+                                 font=("Helvetica", 12))
+        self.file_button.place(x=200, y=500)
         self.start_button = tk.Button(root, text="开始", command=self.start_camera, bg="orange", width=5, height=2,
                                       font=("Helvetica", 16))
         self.start_button.place(x=350, y=500)
         self.red_button = tk.Button(root, text="➔Esc", command=self.kill_predict, bg="orange", width=5, height=2,
                                     font=("Helvetica", 16, "bold"))
         self.red_button.place(x=500, y=500)
-        self.status_label2 = tk.Label(root, text="紧急报警", font=("Helvetica", 16), bg="white", fg="red", width=10,
+        self.status_label2 = tk.Button(root, text="紧急报警", command=self.police, font=("Helvetica", 16), bg="white", fg="red", width=10,
                                      height=2, relief="solid",
-                                     bd=2)
+                                     bd=2) 
+
         self.status_label2.place(x=743, y=600)
 
         self.tip_text = tk.Label(root, text="灰色矩形框为可显示输出数据框，黄色矩形按钮表示开始按钮",
@@ -58,6 +67,8 @@ class CameraApp:
         self.status_label.place(x=630, y=365)
 
         
+        # 在这个界面的开始按钮的左侧加入一个选择文件的按钮栏，把选择的文件的地址放到self.bagpath
+        
         self.done_lock = True
         self.cap = None
         self.camera_thread = None
@@ -68,13 +79,44 @@ class CameraApp:
         self.yolo_last_results = ["正在实时监测......"]
         self.init_img = cv2.imread("1.png")
 
-        
+        self.start_time = time.time()
+
+        self.v8_det() # 直接初始化
+
+    def police(self):
+        print("police")
+        token = '243eb0062a18451c90ac6d123edf34e0' #在pushplus网站中可以找到
+        # token = '你的token' #在pushpush网站中可以找到
+        title= "Warning!" #改成你要的标题内容
+        connect = ""
+        if "正在实时监测" not in self.yolo_last_results[0]:
+            content = self.yolo_last_results[0] + "请管理员通知误入人员离开！" #改成你要的正文内容
+        else:
+            content = self.yolo_last_results[0]
+        url = 'http://www.pushplus.plus/send'
+        data = {
+            "token":token,
+            "title":title,
+            "content":content
+        }
+        body=json.dumps(data).encode(encoding='utf-8')
+        headers = {'Content-Type':'application/json'}
+        requests.post(url,data=body,headers=headers)
+
 
     def predict_text_display(self, predict_text):
         self.result_frame.delete("predict_text_display")
         self.result_frame.create_text(100, 16, text=predict_text, font=("Helvetica", 12), tags="predict_text_display")
         self.root.update_idletasks()  # Update display
 
+    def select_file(self):
+        # Open a file dialog and store the selected file path in self.bagpath
+        self.bagpath = filedialog.askopenfilename(title="选择文件", filetypes=[("All Files", "*.*")])
+        if self.bagpath:
+            print(f"Selected file: {self.bagpath}")
+        self.det.info_rs.bagpath = self.bagpath
+        self.det.info_rs.refresh()
+            
     def start_camera(self):
         self.model_message = "模型加载中..."
         self.image_frame.create_text(275, 250, text=self.model_message, font=("Helvetica", 12),
@@ -97,7 +139,7 @@ class CameraApp:
         with open('output.txt', 'w', encoding='utf-8') as f:
             f.write("START")
 
-        self.v8_det()
+        # self.v8_det()
 
         while self.is_running:
             # insert frame
@@ -119,7 +161,12 @@ class CameraApp:
             动态显示"模型加载中......."
 
             '''
+            
             predict_text_display_count -= 1  # 保证动态区间控制的值在发生变化
+            self.end_time = time.time()
+            if ((self.end_time-self.start_time) % 15) < 0.1:
+                self.yolo_last_results = ["正在实时监测......"]
+                self.start_time = time.time()
             if predict_text_display_count % 4 == 0:  # 显示计数区间值隔帧动态--(根据自己的实际帧率调整，帧率高就调高点，帧率低就调低点)
                 predict_text_arr.append(".")
                 predict_text = f'AI模型监测中{"".join(predict_text_arr)}'  # 将列表转化为字符串方便显示
@@ -158,6 +205,8 @@ class CameraApp:
             yolo_last_results = self.yolo_last_results # YOLO处理以后最后的结果
             for temp in yolo_last_results:
                 # print(temp)
+                # if temp != "":
+                temp += "\n危险！请远离！"
                 self.result_frame.create_text(100, pre_out_size, text=temp, font=("Helvetica", 9),
                                               tags="yolo_result_font")  # Add new tag to display
                 pre_out_size += 38  # 自动换行间隔设定
@@ -204,31 +253,39 @@ class CameraApp:
             self.det = PreDict(opt)
             
     def deting(self):
-        frm, result_frame, text = self.det.predict()
-        frm = np.array(frm)  # 转换为 NumPy 数组
         
-        if (self.det.end_time-self.det.start_time) >= 18:
-        	app.yolo_last_results = ["正在发现闯入人员......"]
+        try:
+                
+            # self.det.bagpath
+            frm, result_frame, text = self.det.predict()
+            if result_frame is None:
+                return None
+            frm = np.array(frm)  # 转换为 NumPy 数组
 
-        if (((self.det.end_time-self.det.start_time) >= 30) or (self.once_pyttsx_lock and (self.det.end_time-self.det.start_time) >= 1.5)) and text != "":
-            # print("sssssssssssssssss")
-            self.once_pyttsx_lock = False
-            self.det.start_time = time.time()
-            print(text)
-            # pytt_start(text)
-            app.yolo_last_results = [text]
-            
-            th = threading.Thread(target=self.pytt_start, args=(text,self.engine))
-            th.start()
-            # th.join()
+            if (self.det.end_time-self.det.start_time) >= 18:
+                    app.yolo_last_results = ["正在发现闯入人员......"]
 
-        # frm = frm[..., ::-1]  # 从 RGB 转换为 BGR，OpenCV 使用 BGR
+            if (((self.det.end_time-self.det.start_time) >= 30) or (self.once_pyttsx_lock and (self.det.end_time-self.det.start_time) >= 1.5)) and text != "":
+                # print("sssssssssssssssss")
+                self.once_pyttsx_lock = False
+                self.det.start_time = time.time()
+                print(text)
+                # pytt_start(text)
+                app.yolo_last_results = [text]
 
-        # 如果图像是 GPU 上的 Tensor，迁移到 CPU 并转换为 NumPy 数组
-        if isinstance(frm, torch.Tensor):
-            frm = frm.cpu().numpy()
-        app.init_img = result_frame
+                th = threading.Thread(target=self.pytt_start, args=(text,self.engine))
+                th.start()
+                # th.join()
 
+            # frm = frm[..., ::-1]  # 从 RGB 转换为 BGR，OpenCV 使用 BGR
+
+            # 如果图像是 GPU 上的 Tensor，迁移到 CPU 并转换为 NumPy 数组
+            if isinstance(frm, torch.Tensor):
+                frm = frm.cpu().numpy()
+            app.init_img = result_frame
+
+        except:
+            print("Finding...")
 
 
 if __name__ == '__main__':
