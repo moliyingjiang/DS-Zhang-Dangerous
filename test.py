@@ -12,4 +12,3 @@ def police():
 
 if __name__ == '__main__':
     police()
-
