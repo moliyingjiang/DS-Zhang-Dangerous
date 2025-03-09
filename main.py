@@ -5,7 +5,7 @@ from libdet import *
 # from utils.CTK import *
 from tkinter import Canvas
 from PIL import Image, ImageTk
-from test import police
+# from test import police
 import tkinter as tk
 import cv2
 import threading
@@ -42,12 +42,15 @@ class CameraApp:
                                        fg="black", relief="solid", bd=2)
         # self.result_frame.create_text(100, 20, text="识别程序状态输出", font=("Helvetica", 16))
 
-        self.file_button = tk.Button(root, text="选择文件", command=self.select_file, bg="lightblue", width=10, height=2,
+        self.file_button = tk.Button(root, text="选择文件", command=self.select_file, bg="lightyellow", width=10, height=2,
                                  font=("Helvetica", 12))
-        self.file_button.place(x=200, y=500)
+        self.file_button.place(x=25, y=500)
         self.start_button = tk.Button(root, text="开始", command=self.start_camera, bg="orange", width=5, height=2,
                                       font=("Helvetica", 16))
         self.start_button.place(x=350, y=500)
+        self.start_button = tk.Button(root, text="继续", command=self.resume_camera, bg="white", width=5, height=2,
+                                      font=("Helvetica", 12))
+        self.start_button.place(x=180, y=500)
         self.red_button = tk.Button(root, text="➔Esc", command=self.kill_predict, bg="orange", width=5, height=2,
                                     font=("Helvetica", 16, "bold"))
         self.red_button.place(x=500, y=500)
@@ -57,7 +60,7 @@ class CameraApp:
 
         self.status_label2.place(x=743, y=600)
 
-        self.tip_text = tk.Label(root, text="灰色矩形框为可显示输出数据框，黄色矩形按钮表示开始按钮",
+        self.tip_text = tk.Label(root, text="灰色矩形框为可显示输出数据框，黄色矩形按钮表示开始按钮  !! Warning: 选择文件后请点击继续按钮",
                                  font=("Helvetica", 10))
         self.tip_text.place(x=20, y=620)
 
@@ -110,12 +113,16 @@ class CameraApp:
         self.root.update_idletasks()  # Update display
 
     def select_file(self):
+        self.is_running = False
         # Open a file dialog and store the selected file path in self.bagpath
         self.bagpath = filedialog.askopenfilename(title="选择文件", filetypes=[("All Files", "*.*")])
         if self.bagpath:
             print(f"Selected file: {self.bagpath}")
         self.det.info_rs.bagpath = self.bagpath
         self.det.info_rs.refresh()
+
+    def resume_camera(self):
+        self.is_running = True
             
     def start_camera(self):
         self.model_message = "模型加载中..."
@@ -141,8 +148,11 @@ class CameraApp:
 
         # self.v8_det()
 
-        while self.is_running:
+        while True:
             # insert frame
+            if not self.is_running:
+                continue
+            
             if self.done_lock:
                 self.image_frame.delete("pre_display_none")  # 删除一开始DeBug用到的TK初始文字显示
                 self.done_lock = False  # 模型加载完成只显示一次
