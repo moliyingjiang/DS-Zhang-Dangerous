@@ -174,7 +174,7 @@ class CameraApp:
             
             predict_text_display_count -= 1  # 保证动态区间控制的值在发生变化
             self.end_time = time.time()
-            if ((self.end_time-self.start_time) % 45) < 0.1:
+            if ((self.end_time-self.start_time) % 100) < 0.2:
                 self.yolo_last_results = ["正在实时监测......"]
                 self.start_time = time.time()
             if predict_text_display_count % 4 == 0:  # 显示计数区间值隔帧动态--(根据自己的实际帧率调整，帧率高就调高点，帧率低就调低点)
