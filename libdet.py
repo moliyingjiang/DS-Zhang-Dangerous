@@ -241,10 +241,18 @@ class PreDict(object):
                     cv2.rectangle(frm,(x1,y1),(x2,y2),rag2_color,2)
                     cv2.putText(frm,o[0],(x1,y1 - 10),cv2.FONT_HERSHEY_SIMPLEX,0.8,rag2_color,2)
 
+        if person_message_points == []:
+            print(" =========================================== No person")
+            for i in enumerate(label_array):
+                x1,y1,x2,y2 = i[-2]
+                rag2_color = (255,0,0)
+                cv2.rectangle(frm,(x1,y1),(x2,y2),rag2_color,2)
+                cv2.putText(frm,i[0],(x1,y1 - 10),cv2.FONT_HERSHEY_SIMPLEX,0.8,rag2_color,2)
+
         print("\n\n")
 
         # text = text + "危险！请远离！"
-        text = text + "."
+        text = text + ""
         '''reg end'''
 
         temp_list = []
@@ -255,7 +263,7 @@ class PreDict(object):
         self.frm = frm
 
         # if text != "危险！请远离！":
-        if text != ".":
+        if text != "":
             return frm, self.color_image, text
         else:
             return frm, self.color_image, ""
